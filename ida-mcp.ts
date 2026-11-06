@@ -1,6 +1,6 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -278,6 +278,13 @@ export default function idaMcp(pi: ExtensionAPI) {
         const value = process.env[name];
         if (value) env[name] = value;
       }
+      // Hosts launched without IDA's env (Finder, IDE) would otherwise let the
+      // worker attach to a GUI instance and use a PEP 668 system interpreter.
+      env.IDA_NEXUS_IDALIB_ONLY ??= "1";
+      env.IDAPYTHON_VENV_EXECUTABLE ??= join(
+        homedir(),
+        ".idapro/venv/bin/python3",
+      );
       const transport = new StdioClientTransport({
         command: "uv",
         args: ["run", "--no-dev", "ida-mcp", "stdio", `--agent=${agentKind}`],
